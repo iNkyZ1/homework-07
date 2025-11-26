@@ -1,13 +1,80 @@
 import { useState, useEffect, useCallback } from "react";
 
+function buildUrlWithParams(baseUrl, params) {
+  if (!params || Object.keys(params).length === 0) {
+    return baseUrl;
+  }
+
+  const url = new URL(baseUrl);
+  Object.entries(params).forEach(([key, value]) => {
+    url.searchParams.set(key, value);
+  });
+
+  return url.toString();
+}
+
 export function useFetch(initialUrl, initialOptions = {}) {
+  const [url, setUrl] = useState(initialUrl);
+  const [options, setOptions] = useState(initialOptions);
+
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const refetch = useCallback(() => {}, []);
+  const performFetch = useCallback(async (currentUrl, currentOptions) => {
+    setIsLoading(true);
+    setError(null);
 
-  useEffect(() => {}, []);
+    try {
+      const { params, ...fetchOptions } = currentOptions || {};
+
+      const finalUrl = buildUrlWithParams(currentUrl, params);
+
+      const response = await fetch(finalUrl, fetchOptions);
+
+      if (!response.ok) {
+        throw new Error("Request failed with status " + response.status);
+      }
+
+      const json = await response.json();
+      setData(json);
+    } catch (err) {
+      setError(err);
+      setData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!url) {
+      return;
+    }
+
+    performFetch(url, options);
+  }, [url, options, performFetch]);
+
+  const refetch = useCallback((newOptions = {}) => {
+    setOptions((prevOptions) => {
+      const prevParams = prevOptions?.params || {};
+      const newParams = newOptions?.params || {};
+
+      const mergedParams = {
+        ...prevParams,
+        ...newParams,
+      };
+
+      return {
+        ...prevOptions,
+        ...newOptions,
+        params: mergedParams,
+      };
+    });
+
+    if (newOptions.url) {
+      setUrl(newOptions.url);
+    }
+  }, []);
 
   return {
     data,
