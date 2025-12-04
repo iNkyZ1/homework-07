@@ -1,17 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-
-function buildUrlWithParams(baseUrl, params) {
-  if (!params || Object.keys(params).length === 0) {
-    return baseUrl;
-  }
-
-  const url = new URL(baseUrl);
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.set(key, value);
-  });
-
-  return url.toString();
-}
+import { buildUrlWithParams } from "../utils/buildUrlWithParams";
 
 export function useFetch(initialUrl, initialOptions = {}) {
   const [url, setUrl] = useState(initialUrl);
@@ -27,7 +15,6 @@ export function useFetch(initialUrl, initialOptions = {}) {
 
     try {
       const { params, ...fetchOptions } = currentOptions || {};
-
       const finalUrl = buildUrlWithParams(currentUrl, params);
 
       const response = await fetch(finalUrl, fetchOptions);
@@ -47,10 +34,7 @@ export function useFetch(initialUrl, initialOptions = {}) {
   }, []);
 
   useEffect(() => {
-    if (!url) {
-      return;
-    }
-
+    if (!url) return;
     performFetch(url, options);
   }, [url, options, performFetch]);
 
@@ -58,11 +42,7 @@ export function useFetch(initialUrl, initialOptions = {}) {
     setOptions((prevOptions) => {
       const prevParams = prevOptions?.params || {};
       const newParams = newOptions?.params || {};
-
-      const mergedParams = {
-        ...prevParams,
-        ...newParams,
-      };
+      const mergedParams = { ...prevParams, ...newParams };
 
       return {
         ...prevOptions,
@@ -76,10 +56,5 @@ export function useFetch(initialUrl, initialOptions = {}) {
     }
   }, []);
 
-  return {
-    data,
-    isLoading,
-    error,
-    refetch,
-  };
+  return { data, isLoading, error, refetch };
 }
